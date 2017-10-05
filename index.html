@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+	<title>Multiple Select Upload</title>
+	<meta charset="utf-8">
+</head>
+<body>
+	
+	<form>
+		<select id="docs" name="documents" multiple>
+		    <option value="1">Domovnica</option>
+		    <option value="2">Osobna</option>
+		    <option value="3">Putovnica</option>
+	  	</select>
+  	</form>
+
+
+  	<div id="files"></div>
+
+<script src="https://code.jquery.com/jquery-3.1.0.js"></script>
+<script>
+
+multiselectUpload(
+	{selectId: "#docs"},
+	[
+    	{
+          "id": "2",
+          "name": "Osobna",
+          "download": {"path":"#", "name":"Osobna.pdf"}
+        },
+        {
+          "id": "3",
+          "name": "Putovnica",
+          "download": {"path":"#", "name":"putovnica.pdf"}
+        }
+    ]
+);
+
+function multiselectUpload(options, files) {
+	var settings = {
+    	selectId: ".documents",
+    	filesContainer: "#files"
+    };
+    
+    $.extend(settings, options);
+    
+	var $documents = $(settings.selectId),
+        selectedNum = $documents.find(":selected").length,
+
+        selectedDocs = {
+          documents: [],
+          container: $(settings.filesContainer),
+
+          add: function(obj) {
+            if(!this.hasId(obj.id))
+              this.documents.push(obj);
+          }, 
+
+          remove: function(id) {
+            for(var i = 0; i < this.count(); i++) {
+              if(this.documents[i].id == id) {
+                this.documents.splice(i, 1);
+                break;
+              }
+            }
+          },
+
+          count: function() {
+            return this.documents.length;
+          },
+          
+          set: function(files) {
+          	this.documents = files;
+          },
+
+          get: function() {
+            return this.documents;
+          },
+
+          hasId: function(id) {
+          
+            if(this.count()) {
+              var docs = this.get();
+
+              for(var doc in docs) {
+                if(docs[doc].id == id)
+                  return true;
+              }
+            }
+
+            return false;
+          },
+
+          render: function() {
+            var html = "";
+
+            if(this.count()) {
+              this.get().map(function(doc) {
+                html+= "<label for='files["+doc.id+"]'>"+doc.name+"</label>";
+                if( doc.download.path && doc.download.name )
+                	html+= " | <a href='"+doc.download.path+"'>"+doc.download.name+"</a><br>";
+                else 
+                	html+= "<br>";
+                html+= "<input style='margin-top:5px' type='file' id='files["+doc.id+"]' name='files["+doc.id+"]'><br><br>";
+            	
+              });
+            }
+
+            this.container.html(html);
+
+          },
+
+          empty: function() {
+            this.documents = [];
+          }
+        };
+
+
+    $documents.on("change", setState);
+    
+    if(files) {
+    	selectedDocs.set(files);
+        var getSelectedArr = selectedDocs.get().map(function(doc) {
+        	return doc.id;
+        });
+        $documents.val(getSelectedArr);
+        setState.call($documents);
+    }
+    
+    function setState() {
+    	var $items = $(this);
+
+      if(selectedNum = $items.find(":selected").length) {
+
+        $items.find("option").each(function(i, el) {
+          var $el = $(el);
+
+          if($el.is(":selected")) {
+
+            var selectedDoc = {
+              "id": $el.val(),
+              "name": $el.text(),
+              "download": {"path":"", "name":""}
+            };
+
+            selectedDocs.add(selectedDoc);
+
+          } else {
+            selectedDocs.remove($el.val());
+          }
+        });
+
+      } else {
+        selectedDocs.empty();
+      }
+
+      selectedDocs.render();
+    }
+}
+</script>
+</body>
+</html>
